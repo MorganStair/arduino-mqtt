@@ -119,14 +119,24 @@ static void MQTTClientHandler(lwmqtt_client_t * /*client*/, void *ref, lwmqtt_st
   cb->simple(str_topic, str_payload);
 }
 
-MQTTClient::MQTTClient(int bufSize) {
-  // reset client
-  memset(&this->client, 0, sizeof(lwmqtt_client_t));
+MQTTClient::MQTTClient(int bufSizes) :
+  readBufSize(bufSizes),
+  writeBufSize(bufSizes)
+{
+  // reset client and allocate buffers 
+  memset(&this->client, 0, sizeof(lwmqtt_client_t)); 
+  this->readBuf = (uint8_t *)malloc((size_t)readBufSize + 1);
+  this->writeBuf = (uint8_t *)malloc((size_t)writeBufSize);
+}
 
-  // allocate buffers
-  this->bufSize = (size_t)bufSize;
-  this->readBuf = (uint8_t *)malloc((size_t)bufSize + 1);
-  this->writeBuf = (uint8_t *)malloc((size_t)bufSize);
+MQTTClient::MQTTClient(size_t recvBufSize, size_t sendBufSize) :
+  readBufSize(recvBufSize),
+  writeBufSize(sendBufSize)
+{
+  // reset client and allocate buffers 
+  memset(&this->client, 0, sizeof(lwmqtt_client_t));
+  this->readBuf = (uint8_t *)malloc((size_t)readBufSize + 1);
+  this->writeBuf = (uint8_t *)malloc((size_t)writeBufSize);
 }
 
 MQTTClient::~MQTTClient() {
@@ -151,7 +161,7 @@ void MQTTClient::begin(const char _hostname[], int _port, Client &_client) {
   this->netClient = &_client;
 
   // initialize client
-  lwmqtt_init(&this->client, this->writeBuf, this->bufSize, this->readBuf, this->bufSize);
+  lwmqtt_init(&this->client, this->writeBuf, this->writeBufSize, this->readBuf, this->readBufSize);
 
   // set timers
   lwmqtt_set_timers(&this->client, &this->timer1, &this->timer2, lwmqtt_arduino_timer_set, lwmqtt_arduino_timer_get);
